@@ -192,10 +192,9 @@ async function run() {
       const payment = req.body;
       const insertResult = await paymentCollection.insertOne(payment);
 
-      // const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
-      // const deleteResult = await cartCollection.deleteMany(query)
-      // deleteResult
-      res.send({ insertResult });
+      const query = { _id: { $in: payment.enrolledClassId.map(id => new ObjectId(id)) } }
+      const deleteResult = await selectedClassCollection.deleteMany(query)
+      res.send({ insertResult,deleteResult });
     })
       
 
