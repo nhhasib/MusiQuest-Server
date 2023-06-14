@@ -43,7 +43,8 @@ async function run() {
     await client.connect();
     const usersCollection = client.db("MusiQuest").collection("users");
     const classesCollection = client.db("MusiQuest").collection("Classes");
-    const instructorsCollection = client.db("MusiQuest").collection("Instructors");
+      const instructorsCollection = client.db("MusiQuest").collection("Instructors");
+      const selectedClassCollection = client.db("MusiQuest").collection("selected");
       
       
         app.post('/jwt', (req, res) => {
@@ -89,18 +90,66 @@ async function run() {
           }
           const result = await usersCollection.updateOne(filter, updateDoc, options);
           res.send(result)
-    })
+      })
+      app.patch('/users/instructors/:id', async (req, res) => {
+        const id = req.params.id;
+        console.log(id)
+        const filter = { _id: new ObjectId(id) };
+        const options = { upsert: true };
+        const updateDoc = {
+            $set: {
+                role:'instractor'
+            },
+        }
+        const result = await usersCollection.updateOne(filter, updateDoc, options);
+        res.send(result)
+  })
       
 
     app.get("/classes", async (req, res) => {
       const result = await classesCollection.find().toArray();
       res.send(result);
     });
-    app.post('/')
+      
+    app.post('/classes', async (req, res) => {
+          const data = req.body;
+          const result = await classesCollection.insertOne(data);
+          res.send(result)
+    })
+      
+      app.get('/selectedClass', async (req, res) => {
+          const email = req.query.email;
+          if (!email) {
+              res.send([])
+          }
+        //   const decodedEmail = req.decoded.email;
+    //   if (email !== decodedEmail) {
+    //     return res.status(403).send({ error: true, message: 'forbidden access' })
+    //   }
+
+      const query = { email: email };
+      const result = await selectedClassCollection.find(query).toArray();
+      res.send(result);
+      })
+      
+      app.post('/selectedClass', async (req, res) => {
+        const data = req.body;
+        const result = await selectedClassCollection.insertOne(data);
+        res.send(result)
+  })
+    
+      app.delete('/selectedClass/:id', async(req, res)=> {
+          const id = req.params.id;
+          const query = { _id: new ObjectId(id) };
+          const result = await selectedClassCollection.deleteOne(query);
+          res.send(result)
+      })
     app.get("/instructors", async (req, res) => {
         const result = await instructorsCollection.find().toArray();
         res.send(result);
-      });
+    });
+      
+
   
 
     // Send a ping to confirm a successful connection
