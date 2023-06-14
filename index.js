@@ -117,7 +117,7 @@ async function run() {
           res.send(result)
     })
     
-    app.get('/myClass', async (req, res) => {
+    app.get('/myClass',verifyJWT, async (req, res) => {
         const email = req.query.email;
         if (!email) {
             res.send([])
@@ -139,7 +139,7 @@ async function run() {
         res.send(result)
     })    
       
-      app.get('/selectedClass', async (req, res) => {
+      app.get('/selectedClass',verifyJWT, async (req, res) => {
           const email = req.query.email;
           if (!email) {
               res.send([])
