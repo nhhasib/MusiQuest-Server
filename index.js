@@ -4,6 +4,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 var jwt = require('jsonwebtoken');
 require('dotenv').config()
+const stripe = require("stripe")(process.env.PAYMENT_SECRET_KEY)
 const port = process.env.PORT||5000
 
 app.use(express.json());
@@ -44,7 +45,8 @@ async function run() {
     const usersCollection = client.db("MusiQuest").collection("users");
     const classesCollection = client.db("MusiQuest").collection("Classes");
       const instructorsCollection = client.db("MusiQuest").collection("Instructors");
-      const selectedClassCollection = client.db("MusiQuest").collection("selected");
+    const selectedClassCollection = client.db("MusiQuest").collection("selected");
+    const paymentCollection = client.db("MusiQuest").collection('payments');
       
       
         app.post('/jwt', (req, res) => {
@@ -98,7 +100,7 @@ async function run() {
         const options = { upsert: true };
         const updateDoc = {
             $set: {
-                role:'instractor'
+                role:'instructor'
             },
         }
         const result = await usersCollection.updateOne(filter, updateDoc, options);
@@ -122,10 +124,10 @@ async function run() {
         if (!email) {
             res.send([])
         }
-      //   const decodedEmail = req.decoded.email;
-  //   if (email !== decodedEmail) {
-  //     return res.status(403).send({ error: true, message: 'forbidden access' })
-  //   }
+    //     const decodedEmail = req.decoded.email;
+    // if (email !== decodedEmail) {
+    //   return res.status(403).send({ error: true, message: 'forbidden access' })
+    // }
 
     const query = { email: email };
     const result = await classesCollection.find(query).toArray();
@@ -144,16 +146,14 @@ async function run() {
           if (!email) {
               res.send([])
           }
-        //   const decodedEmail = req.decoded.email;
-    //   if (email !== decodedEmail) {
-    //     return res.status(403).send({ error: true, message: 'forbidden access' })
-    //   }
-
+          const decodedEmail = req.decoded.email;
+      if (email !== decodedEmail) {
+        return res.status(403).send({ error: true, message: 'forbidden access' })
+      }
       const query = { email: email };
       const result = await selectedClassCollection.find(query).toArray();
       res.send(result);
       })
-
       
       app.post('/selectedClass', async (req, res) => {
         const data = req.body;
@@ -167,10 +167,36 @@ async function run() {
           const result = await selectedClassCollection.deleteOne(query);
           res.send(result)
       })
+    
+    app.post("/create-payment-intent",verifyJWT, async (req, res) => {
+      const { price } = req.body;
+      const amount = price * 100;
+      
+      // Create a PaymentIntent with the order amount and currency
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "mxn",
+        payment_method_types: ['card'],
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      })
+    })
+    
     app.get("/instructors", async (req, res) => {
         const result = await instructorsCollection.find().toArray();
         res.send(result);
     });
+
+    app.post('/payments', async (req, res) => {
+      const payment = req.body;
+      const insertResult = await paymentCollection.insertOne(payment);
+
+      // const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
+      // const deleteResult = await cartCollection.deleteMany(query)
+      // deleteResult
+      res.send({ insertResult });
+    })
       
 
   
