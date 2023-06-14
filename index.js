@@ -116,6 +116,28 @@ async function run() {
           const result = await classesCollection.insertOne(data);
           res.send(result)
     })
+    
+    app.get('/myClass', async (req, res) => {
+        const email = req.query.email;
+        if (!email) {
+            res.send([])
+        }
+      //   const decodedEmail = req.decoded.email;
+  //   if (email !== decodedEmail) {
+  //     return res.status(403).send({ error: true, message: 'forbidden access' })
+  //   }
+
+    const query = { email: email };
+    const result = await classesCollection.find(query).toArray();
+    res.send(result);
+    })
+      
+    app.delete('/myClass/:id', async(req, res)=> {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await classesCollection.deleteOne(query);
+        res.send(result)
+    })    
       
       app.get('/selectedClass', async (req, res) => {
           const email = req.query.email;
@@ -131,6 +153,7 @@ async function run() {
       const result = await selectedClassCollection.find(query).toArray();
       res.send(result);
       })
+
       
       app.post('/selectedClass', async (req, res) => {
         const data = req.body;
