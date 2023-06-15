@@ -47,6 +47,7 @@ async function run() {
       const instructorsCollection = client.db("MusiQuest").collection("Instructors");
     const selectedClassCollection = client.db("MusiQuest").collection("selected");
     const paymentCollection = client.db("MusiQuest").collection('payments');
+    const enrolledClassCollection = client.db('MusiQuest').collection('enrolledClass');
       
       
         app.post('/jwt', (req, res) => {
@@ -137,7 +138,7 @@ async function run() {
         res.send(result)
   })
       
-    app.get("/classes",verifyJWT, async (req, res) => {
+    app.get("/classes", async (req, res) => {
       const result = await classesCollection.find().toArray();
       res.send(result);
     });
@@ -186,17 +187,35 @@ async function run() {
       res.send(result)
       console.log(result)
     })
-   
+    app.post('/classes/enrolled', async (req, res) => {
+      const data = req.body;
+      const result = await enrolledClassCollection.insertOne(data);
+      res.send(result)
+    })
+    app.get('/classes/enrolled', async(req,res)=> {
+      const email = req.query.email;
+      if (!email) {
+        res.send([])
+      }
+      const query = { email: email };
+    const result = await enrolledClassCollection.find(query).toArray();
+    res.send(result);
+    })
+
+    app.get('/popularClass',async (req, res) => {
+      const result = await classesCollection.find().sort({ enrolled: -1 }).toArray();
+      res.send(result)
+    })
     
     app.get('/myClass',verifyJWT, async (req, res) => {
         const email = req.query.email;
         if (!email) {
             res.send([])
         }
-    //     const decodedEmail = req.decoded.email;
-    // if (email !== decodedEmail) {
-    //   return res.status(403).send({ error: true, message: 'forbidden access' })
-    // }
+        const decodedEmail = req.decoded.email;
+    if (email !== decodedEmail) {
+      return res.status(403).send({ error: true, message: 'forbidden access' })
+    }
 
     const query = { email: email };
     const result = await classesCollection.find(query).toArray();
@@ -265,15 +284,22 @@ async function run() {
       const deleteResult = await selectedClassCollection.deleteMany(query)
       res.send({ insertResult,deleteResult });
     })
+    app.get('/myPayment', async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const result = await paymentCollection.find(query).toArray();
+      res.send(result)
+    })
+
     app.get('/enrolled', async(req,res)=> {
       const email = req.query.email;
           if (!email) {
               res.send([])
           }
-      //   const decodedEmail = req.decoded.email;
-      // if (email !== decodedEmail) {
-      //   return res.status(403).send({ error: true, message: 'forbidden access' })
-      // }
+        const decodedEmail = req.decoded.email;
+      if (email !== decodedEmail) {
+        return res.status(403).send({ error: true, message: 'forbidden access' })
+      }
       const query = { email: email };
       const result = await paymentCollection.find(query).toArray();
       res.send(result);
