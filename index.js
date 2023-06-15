@@ -55,20 +55,36 @@ async function run() {
             res.send({token})
         })
       
-        // const verifyAdmin = async (req, res, next) => {
-        //     const email = req.decoded.email;
-        //     const query = { email: email };
-        //     const user = await usersCollection.findOne(query);
-        //     if (user?.role !== 'admin') {
-        //       return res.status(403).send({ error: true, message: 'forbidden message' });
-        //     }
-        //     next();
-        //   }
+        const verifyAdmin = async (req, res, next) => {
+            const email = req.decoded.email;
+            const query = { email: email };
+            const user = await usersCollection.findOne(query);
+            if (user?.role !== 'admin') {
+              return res.status(403).send({ error: true, message: 'forbidden message' });
+            }
+            next();
+          }
 
-    app.get("/users", async (req, res) => {
+    app.get("/allUsers",verifyJWT,verifyAdmin, async (req, res) => {
           const result =await usersCollection.find().toArray();
         res.send(result)
     })
+
+    app.get('/user',verifyJWT, async (req, res) => {
+      const email = req.query.email;
+      if (!email) {
+        res.send([])
+      }
+          const decodedEmail = req.decoded.email;
+    if (email !== decodedEmail) {
+      return res.status(403).send({ error: true, message: 'forbidden access' })
+    }
+    const query = { email: email };
+    const result = await usersCollection.findOne(query);
+    res.send(result);
+    })
+
+
     app.post("/users", async (req, res) => {
       const data = req.body;
       const query = { email: data.email };
@@ -105,10 +121,23 @@ async function run() {
         }
         const result = await usersCollection.updateOne(filter, updateDoc, options);
         res.send(result)
+      })
+    
+      app.patch('/users/students/:id', async (req, res) => {
+        const id = req.params.id;
+        console.log(id)
+        const filter = { _id: new ObjectId(id) };
+        const options = { upsert: true };
+        const updateDoc = {
+            $set: {
+                role:'student'
+            },
+        }
+        const result = await usersCollection.updateOne(filter, updateDoc, options);
+        res.send(result)
   })
       
-
-    app.get("/classes", async (req, res) => {
+    app.get("/classes",verifyJWT, async (req, res) => {
       const result = await classesCollection.find().toArray();
       res.send(result);
     });
@@ -118,6 +147,46 @@ async function run() {
           const result = await classesCollection.insertOne(data);
           res.send(result)
     })
+    app.patch('/classes/approve/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+           status:'approved'
+        },
+    }
+      const result = await classesCollection.updateOne(query, updateDoc)
+      res.send(result)
+    })
+
+    app.patch('/classes/denied/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+           status:'denied'
+        },
+    }
+      const result = await classesCollection.updateOne(query, updateDoc)
+      res.send(result)
+    })
+
+    app.patch('/classes/enrolled/:id', async (req, res) => {
+      const id = req.params.id;
+      console.log(id)
+      const query = { _id: new ObjectId(id) };
+      const data = req.body;
+      const updateDoc = {
+        $set: {
+          available: data.available,
+          enrolled:data.enrolled
+        },
+      } 
+      const result = await classesCollection.updateOne(query, updateDoc)
+      res.send(result)
+      console.log(result)
+    })
+   
     
     app.get('/myClass',verifyJWT, async (req, res) => {
         const email = req.query.email;
@@ -196,7 +265,20 @@ async function run() {
       const deleteResult = await selectedClassCollection.deleteMany(query)
       res.send({ insertResult,deleteResult });
     })
-      
+    app.get('/enrolled', async(req,res)=> {
+      const email = req.query.email;
+          if (!email) {
+              res.send([])
+          }
+      //   const decodedEmail = req.decoded.email;
+      // if (email !== decodedEmail) {
+      //   return res.status(403).send({ error: true, message: 'forbidden access' })
+      // }
+      const query = { email: email };
+      const result = await paymentCollection.find(query).toArray();
+      res.send(result);
+
+    })
 
   
 
