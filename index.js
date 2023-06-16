@@ -27,7 +27,7 @@ const verifyJWT = (req, res, next) => {
   }
 
 const uri =
-  "mongodb+srv://MusiQuest:71zWe9DUSL554MyR@cluster0.uld9vql.mongodb.net/?retryWrites=true&w=majority";
+  `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.uld9vql.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -97,7 +97,7 @@ async function run() {
       res.send(result);
     });
     
-      app.patch('/users/admin/:id', async (req, res) => {
+      app.patch('/users/admin/:id',verifyJWT,verifyAdmin, async (req, res) => {
           const id = req.params.id;
           console.log(id)
           const filter = { _id: new ObjectId(id) };
@@ -110,7 +110,7 @@ async function run() {
           const result = await usersCollection.updateOne(filter, updateDoc, options);
           res.send(result)
       })
-      app.patch('/users/instructors/:id', async (req, res) => {
+      app.patch('/users/instructors/:id',verifyJWT,verifyAdmin, async (req, res) => {
         const id = req.params.id;
         console.log(id)
         const filter = { _id: new ObjectId(id) };
@@ -124,7 +124,7 @@ async function run() {
         res.send(result)
       })
     
-      app.patch('/users/students/:id', async (req, res) => {
+      app.patch('/users/students/:id',verifyJWT,verifyAdmin, async (req, res) => {
         const id = req.params.id;
         console.log(id)
         const filter = { _id: new ObjectId(id) };
@@ -148,7 +148,7 @@ async function run() {
           const result = await classesCollection.insertOne(data);
           res.send(result)
     })
-    app.patch('/classes/approve/:id', async (req, res) => {
+    app.patch('/classes/approve/:id',verifyJWT,verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const updateDoc = {
@@ -160,7 +160,7 @@ async function run() {
       res.send(result)
     })
 
-    app.patch('/classes/denied/:id', async (req, res) => {
+    app.patch('/classes/denied/:id',verifyJWT,verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const updateDoc = {
